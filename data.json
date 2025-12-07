@@ -1,23 +1,163 @@
 [
-  { "symbol": "0700", "name": "腾讯控股", "market": "HK", "category": "tech", "value": 21960 },
-  { "symbol": "3690", "name": "美团-W", "market": "HK", "category": "tech", "value": 9905 },
-  { "symbol": "1810", "name": "小米集团-W", "market": "HK", "category": "tech", "value": 8556 },
+  {
+    "symbol": "0700",
+    "name": "腾讯控股",
+    "market": "HK",
+    "category": "tech",
+    "shares": 36,
+    "avg_cost": 630.995
+  },
+  {
+    "symbol": "3690",
+    "name": "美团-W",
+    "market": "HK",
+    "category": "tech",
+    "shares": 100,
+    "avg_cost": 95.70
+  },
+  {
+    "symbol": "1810",
+    "name": "小米集团-W",
+    "market": "HK",
+    "category": "tech",
+    "shares": 200,
+    "avg_cost": 42.48
+  },
 
-  { "symbol": "QQQM", "name": "NASDAQ100 ETF-M", "market": "US", "category": "core", "value": 12429.17 },
-  { "symbol": "GOOG", "name": "谷歌-C", "market": "US", "category": "tech", "value": 11595.24 },
-  { "symbol": "NVDA", "name": "英伟达", "market": "US", "category": "tech", "value": 3648.20 },
-  { "symbol": "PDD", "name": "拼多多", "market": "US", "category": "tech", "value": 3625.53 },
-  { "symbol": "QQQ", "name": "纳指100ETF", "market": "US", "category": "core", "value": 3127.40 },
-  { "symbol": "AMD", "name": "美国超微公司", "market": "US", "category": "tech", "value": 2179.70 },
-  { "symbol": "AAPL", "name": "苹果", "market": "US", "category": "tech", "value": 1393.90 },
-  { "symbol": "ORCL", "name": "甲骨文", "market": "US", "category": "tech", "value": 1087.90 },
-  { "symbol": "VOO", "name": "标普500ETF", "market": "US", "category": "core", "value": 882.67 },
-  { "symbol": "PYPL", "name": "PayPal", "market": "US", "category": "satellite", "value": 622.80 },
-  { "symbol": "META", "name": "Meta Platforms", "market": "US", "category": "tech", "value": 592.61 },
-  { "symbol": "AMZN", "name": "亚马逊", "market": "US", "category": "tech", "value": 459.06 },
-  { "symbol": "SPY", "name": "标普500指数ETF", "market": "US", "category": "core", "value": 433.29 },
-  { "symbol": "DIA", "name": "道琼斯指数ETF", "market": "US", "category": "core", "value": 254.22 },
-  { "symbol": "UNH", "name": "联合健康", "market": "US", "category": "satellite", "value": 132.36 },
-  { "symbol": "BRK.B", "name": "伯克希尔-B", "market": "US", "category": "satellite", "value": 116.00 },
-  { "symbol": "KO", "name": "可口可乐", "market": "US", "category": "satellite", "value": 84.00 }
+  {
+    "symbol": "QQQM",
+    "name": "NASDAQ100 ETF-M",
+    "market": "US",
+    "category": "core",
+    "shares": 48.263,
+    "avg_cost": 250.357
+  },
+  {
+    "symbol": "GOOG",
+    "name": "谷歌-C",
+    "market": "US",
+    "category": "tech",
+    "shares": 36,
+    "avg_cost": 242.374
+  },
+  {
+    "symbol": "NVDA",
+    "name": "英伟达",
+    "market": "US",
+    "category": "tech",
+    "shares": 20,
+    "avg_cost": 204.34
+  },
+  {
+    "symbol": "PDD",
+    "name": "拼多多",
+    "market": "US",
+    "category": "tech",
+    "shares": 30.8241,
+    "avg_cost": 122.76
+  },
+  {
+    "symbol": "QQQ",
+    "name": "纳指100ETF",
+    "market": "US",
+    "category": "core",
+    "shares": 5,
+    "avg_cost": 594.80
+  },
+  {
+    "symbol": "AMD",
+    "name": "美国超微公司",
+    "market": "US",
+    "category": "tech",
+    "shares": 10,
+    "avg_cost": 265.99
+  },
+  {
+    "symbol": "AAPL",
+    "name": "苹果",
+    "market": "US",
+    "category": "tech",
+    "shares": 5,
+    "avg_cost": 259.25
+  },
+  {
+    "symbol": "ORCL",
+    "name": "甲骨文",
+    "market": "US",
+    "category": "tech",
+    "shares": 5,
+    "avg_cost": 188.00
+  },
+  {
+    "symbol": "VOO",
+    "name": "标普500ETF",
+    "market": "US",
+    "category": "core",
+    "shares": 1.4,
+    "avg_cost": 603.471
+  },
+  {
+    "symbol": "PYPL",
+    "name": "PayPal",
+    "market": "US",
+    "category": "satellite",
+    "shares": 10,
+    "avg_cost": 62.50
+  },
+  {
+    "symbol": "META",
+    "name": "Meta Platforms",
+    "market": "US",
+    "category": "tech",
+    "shares": 0.88,
+    "avg_cost": 593.727
+  },
+  {
+    "symbol": "AMZN",
+    "name": "亚马逊",
+    "market": "US",
+    "category": "tech",
+    "shares": 2,
+    "avg_cost": 223.85
+  },
+  {
+    "symbol": "SPY",
+    "name": "标普500指数ETF",
+    "market": "US",
+    "category": "core",
+    "shares": 0.6319,
+    "avg_cost": 680.472
+  },
+  {
+    "symbol": "DIA",
+    "name": "道琼斯指数ETF",
+    "market": "US",
+    "category": "core",
+    "shares": 0.5296,
+    "avg_cost": 471.998
+  },
+  {
+    "symbol": "UNH",
+    "name": "联合健康",
+    "market": "US",
+    "category": "satellite",
+    "shares": 0.4,
+    "avg_cost": 313.05
+  },
+  {
+    "symbol": "BRK.B",
+    "name": "伯克希尔-B",
+    "market": "US",
+    "category": "satellite",
+    "shares": 0.23,
+    "avg_cost": 504.087
+  },
+  {
+    "symbol": "KO",
+    "name": "可口可乐",
+    "market": "US",
+    "category": "satellite",
+    "shares": 1.2,
+    "avg_cost": 71.142
+  }
 ]
