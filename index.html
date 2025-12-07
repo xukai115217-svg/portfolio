@@ -1,779 +1,141 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <title>我的持仓面板 v2.0</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Chart.js 用于画饼图 -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <style>
-    :root {
-      --bg: #05070a;
-      --card-bg: #111827;
-      --card-bg-soft: #0b1120;
-      --accent: #22c55e;
-      --accent-soft: rgba(34, 197, 94, 0.15);
-      --danger: #f97373;
-      --text-main: #e5e7eb;
-      --text-muted: #9ca3af;
-      --border-subtle: rgba(148, 163, 184, 0.25);
-      --border-strong: rgba(148, 163, 184, 0.5);
-      --chip-bg: rgba(55, 65, 81, 0.8);
-      --chip-border: rgba(148, 163, 184, 0.4);
-      --table-row-hover: rgba(15, 23, 42, 0.85);
-      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.9);
-      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --radius-lg: 18px;
-    }
+  <link rel="stylesheet" href="style.css">
 
-    * {
-      box-sizing: border-box;
-    }
-
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: radial-gradient(circle at top, #020617 0, #030712 45%, #020617 100%);
-      color: var(--text-main);
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
-    }
-
-    body {
-      min-height: 100vh;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-
-    .app-shell {
-      max-width: 1440px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .title-block h1 {
-      margin: 0 0 4px;
-      font-size: 24px;
-      letter-spacing: 0.05em;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .title-block h1::before {
-      content: "📊";
-      filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.8));
-    }
-
-    .title-block small {
-      color: var(--text-muted);
-      font-size: 13px;
-    }
-
-    .pill-group {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      align-items: center;
-    }
-
-    .pill {
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: var(--chip-bg);
-      border: 1px solid var(--chip-border);
-      font-size: 12px;
-      color: var(--text-muted);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .pill span {
-      color: #facc15;
-    }
-
-    .pill.green {
-      background: linear-gradient(90deg, rgba(16, 185, 129, 0.2), rgba(22, 163, 74, 0.5));
-      border: 1px solid rgba(22, 163, 74, 0.9);
-      color: #bbf7d0;
-    }
-
-    .pill.green strong {
-      color: #f9fafb;
-    }
-
-    .pill-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: #22c55e;
-      box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
-    }
-
-    /* 顶部三张总览卡片 */
-    .top-grid {
-      display: grid;
-      grid-template-columns: 2.2fr 2.2fr 1.6fr;
-      gap: 14px;
-    }
-
-    .card {
-      background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.18) 0, rgba(15, 23, 42, 0.95) 55%);
-      border-radius: var(--radius-lg);
-      padding: 14px 16px 16px;
-      border: 1px solid var(--border-subtle);
-      box-shadow: var(--shadow-soft);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .card::before {
-      content: "";
-      position: absolute;
-      inset: -40%;
-      background: radial-gradient(circle at 10% 0, rgba(34, 197, 94, 0.18) 0, transparent 40%);
-      opacity: 0.9;
-      mix-blend-mode: screen;
-      pointer-events: none;
-    }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .card-header h2 {
-      margin: 0;
-      font-size: 15px;
-      color: var(--text-muted);
-      display: flex;
-      gap: 6px;
-      align-items: center;
-    }
-
-    .badge {
-      font-size: 11px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.6);
-      color: var(--text-muted);
-      background: rgba(15, 23, 42, 0.9);
-    }
-
-    .card-main {
-      position: relative;
-      z-index: 1;
-      margin-top: 4px;
-    }
-
-    .card-main .primary-value {
-      font-size: 28px;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .card-main .primary-value.positive {
-      color: #4ade80;
-    }
-
-    .card-main .primary-value.negative {
-      color: #fb7185;
-    }
-
-    .card-main .secondary {
-      margin-top: 4px;
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .card-main .secondary span {
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* 下部主布局 */
-    .main-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 3.2fr) minmax(340px, 2.2fr);
-      gap: 14px;
-      align-items: stretch;
-    }
-
-    .card-table {
-      background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.98));
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border-subtle);
-      box-shadow: var(--shadow-soft);
-      padding: 10px 14px 14px;
-      display: flex;
-      flex-direction: column;
-      min-height: 360px;
-    }
-
-    .table-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-    }
-
-    .table-header h3 {
-      margin: 0;
-      font-size: 14px;
-      color: var(--text-muted);
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .table-header small {
-      color: var(--text-muted);
-      font-size: 12px;
-    }
-
-    .table-wrapper {
-      border-radius: 14px;
-      overflow: hidden;
-      border: 1px solid rgba(31, 41, 55, 0.9);
-      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.9) 0, #020617 65%);
-      flex: 1;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    thead {
-      background: rgba(15, 23, 42, 0.96);
-    }
-
-    thead th {
-      padding: 8px 10px;
-      text-align: right;
-      font-weight: 500;
-      color: var(--text-muted);
-      border-bottom: 1px solid rgba(31, 41, 55, 1);
-      border-right: 1px solid rgba(31, 41, 55, 0.5);
-      white-space: nowrap;
-    }
-
-    thead th:first-child {
-      text-align: left;
-      padding-left: 14px;
-    }
-
-    tbody tr {
-      transition: background 0.16s ease, transform 0.12s ease;
-    }
-
-    tbody tr:nth-child(even) {
-      background: rgba(15, 23, 42, 0.82);
-    }
-
-    tbody tr:nth-child(odd) {
-      background: rgba(15, 23, 42, 0.9);
-    }
-
-    tbody tr:hover {
-      background: var(--table-row-hover);
-      transform: translateY(-1px);
-    }
-
-    td {
-      padding: 7px 10px;
-      border-top: 1px solid rgba(31, 41, 55, 0.9);
-      border-right: 1px solid rgba(31, 41, 55, 0.5);
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-      white-space: nowrap;
-    }
-
-    td:first-child {
-      text-align: left;
-      padding-left: 14px;
-      font-weight: 500;
-    }
-
-    td.symbol-cell {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 2px;
-    }
-
-    .symbol-code {
-      font-family: var(--font-mono);
-      letter-spacing: 0.04em;
-      font-size: 12px;
-    }
-
-    .symbol-name {
-      color: var(--text-muted);
-      font-size: 11px;
-    }
-
-    .tag-chip {
-      font-size: 11px;
-      padding: 3px 7px;
-      margin-left: 6px;
-      border-radius: 999px;
-      border: 1px solid rgba(55, 65, 81, 0.9);
-      color: #e5e7eb;
-      background: rgba(15, 23, 42, 0.9);
-    }
-
-    .pnl-positive {
-      color: #4ade80;
-    }
-
-    .pnl-negative {
-      color: #fb7185;
-    }
-
-    .pnl-zero {
-      color: var(--text-muted);
-    }
-
-    .highlight {
-      color: var(--accent);
-      font-weight: 500;
-    }
-
-    /* 右侧：饼图 + 交易面板 */
-    .right-column {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      min-height: 360px;
-    }
-
-    .card-chart {
-      background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.98));
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border-subtle);
-      box-shadow: var(--shadow-soft);
-      padding: 10px 14px 14px;
-      min-height: 220px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .chart-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 6px;
-    }
-
-    .chart-header h3 {
-      margin: 0;
-      font-size: 14px;
-      color: var(--text-muted);
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .chart-sub {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    .chart-container {
-      position: relative;
-      flex: 1;
-      min-height: 180px;
-    }
-
-    .card-trade {
-      background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.98));
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border-subtle);
-      box-shadow: var(--shadow-soft);
-      padding: 10px 14px 14px;
-    }
-
-    .card-trade h3 {
-      margin: 0 0 8px;
-      font-size: 14px;
-      color: var(--text-muted);
-    }
-
-    .trade-form {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .trade-form label {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    .trade-form input,
-    .trade-form select {
-      border-radius: 999px;
-      border: 1px solid rgba(55, 65, 81, 0.9);
-      background: rgba(15, 23, 42, 0.96);
-      color: var(--text-main);
-      padding: 7px 10px;
-      font-size: 13px;
-      font-family: var(--font-mono);
-    }
-
-    .trade-actions {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      margin-top: 4px;
-    }
-
-    button {
-      border-radius: 999px;
-      border: none;
-      cursor: pointer;
-      font-size: 13px;
-      padding: 7px 14px;
-      font-weight: 500;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #22c55e, #16a34a);
-      color: #0b1120;
-      box-shadow: 0 10px 25px rgba(34, 197, 94, 0.35);
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 14px 30px rgba(34, 197, 94, 0.45);
-    }
-
-    .btn-secondary {
-      background: rgba(15, 23, 42, 0.96);
-      border: 1px solid rgba(148, 163, 184, 0.8);
-      color: var(--text-muted);
-    }
-
-    .btn-secondary:hover {
-      background: rgba(15, 23, 42, 1);
-    }
-
-    .hint {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .hint strong {
-      color: var(--accent);
-    }
-
-    .timestamp {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: #22c55e;
-      margin-right: 4px;
-      box-shadow: 0 0 8px rgba(34, 197, 94, 0.8);
-    }
-
-    @media (max-width: 1024px) {
-      body {
-        padding: 12px;
-      }
-      .app-shell {
-        gap: 10px;
-      }
-      .top-grid {
-        grid-template-columns: 1fr;
-      }
-      .main-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
 </head>
+
 <body>
-<div class="app-shell">
-  <header>
-    <div class="title-block">
-      <h1>我的持仓面板 v2.0</h1>
-      <small>实时价格来自 TwelveData（美股）+ Yahoo Finance（港股），持仓估算 &amp; 成本在本地浏览器计算</small>
-    </div>
-    <div class="pill-group">
-      <div class="pill green">
-        <div class="pill-dot"></div>
-        <span>核心 35%</span> · <span>科技 55%</span> · <span>卫星 10%</span>
+  <div class="app-shell">
+    <header>
+      <div class="title-block">
+        <h1>我的持仓面板 v2.0</h1>
+        <small>实时价格由 TwelveData（美股）+ Yahoo Finance（港股）提供</small>
       </div>
-    </div>
-  </header>
 
-  <!-- 顶部三张卡片：总市值、总盈亏、持仓数量 -->
-  <section class="top-grid">
-    <div class="card">
-      <div class="card-header">
-        <h2>总市值</h2>
-        <div class="badge" id="last-update">更新中...</div>
-      </div>
-      <div class="card-main">
-        <div class="primary-value" id="total-value">0.00</div>
-        <div class="secondary">
-          <span>估算成本：</span><span id="total-cost">0.00</span>
+      <div class="pill-group">
+        <div class="pill green">
+          <div class="pill-dot"></div>
+          <span>核心 35%</span> · <span>科技 55%</span> · <span>卫星 10%</span>
         </div>
       </div>
-    </div>
+    </header>
 
-    <div class="card">
-      <div class="card-header">
-        <h2>总盈亏</h2>
-        <div class="badge">实时价格估算</div>
-      </div>
-      <div class="card-main">
-        <div class="primary-value" id="total-pnl">0.00</div>
-        <div class="secondary">
-          <span>收益率：</span><span id="total-pnl-pct">0.00%</span>
+    <!-- 顶部卡片 -->
+    <section class="top-grid">
+      <div class="card">
+        <div class="card-header">
+          <h2>总市值</h2>
+          <div class="badge" id="last-update">更新中...</div>
         </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header">
-        <h2>仓位数量（估算）</h2>
-        <div class="badge">仅统计成功获取价格的标的</div>
-      </div>
-      <div class="card-main">
-        <div class="primary-value" id="holding-count">0</div>
-        <div class="secondary">
-          <span id="failed-count">0 个标的价格获取失败，未计入</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 下部主布局 -->
-  <section class="main-grid">
-    <!-- 持仓表格 -->
-    <div class="card-table">
-      <div class="table-header">
-        <h3>
-          <span class="status-dot"></span>
-          持仓明细
-        </h3>
-        <small>支持多笔买卖，自动计算成本、仓位、盈亏</small>
-      </div>
-      <div class="table-wrapper">
-        <table>
-          <thead>
-          <tr>
-            <th>标的</th>
-            <th>数量</th>
-            <th>成本价</th>
-            <th>现价</th>
-            <th>市值</th>
-            <th>盈亏</th>
-            <th>盈亏%</th>
-          </tr>
-          </thead>
-          <tbody id="position-table-body">
-          <!-- JS 动态填充 -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- 右侧：饼图 + 交易输入 -->
-    <div class="right-column">
-      <div class="card-chart">
-        <div class="chart-header">
-          <h3>仓位分布 &amp; 交易 <span style="font-size:11px;color:#22c55e;">· 深色 · TradingView 风格</span></h3>
-          <div class="chart-sub" id="chart-subtext">加载中...</div>
-        </div>
-        <div class="chart-container">
-          <canvas id="allocation-chart"></canvas>
+        <div class="card-main">
+          <div class="primary-value" id="total-value">0.00</div>
+          <div class="secondary">估算成本：<span id="total-cost">0.00</span></div>
         </div>
       </div>
 
-      <div class="card-trade">
-        <h3>记录一笔交易</h3>
-        <form id="trade-form" class="trade-form">
-          <label>
-            股票代码（symbol）
-            <input type="text" id="trade-symbol" placeholder="如 NVDA / QQQ / 0700" />
-          </label>
-          <label>
-            价格（买入/卖出）
-            <input type="number" step="0.0001" id="trade-price" placeholder="USD 或 HKD" />
-          </label>
-          <label>
-            数量（买入正数 · 卖出负数）
-            <input type="number" step="0.01" id="trade-qty" placeholder="例如 10 / -5" />
-          </label>
-        </form>
-        <div class="trade-actions">
-          <button type="button" class="btn-primary" id="btn-submit-trade">提交交易</button>
-          <button type="button" class="btn-secondary" id="btn-reset-data">重置为 data.json 估算</button>
+      <div class="card">
+        <div class="card-header">
+          <h2>总盈亏</h2>
+          <div class="badge">实时价格估算</div>
         </div>
-        <div class="hint" style="margin-top:6px;">
-          提示：交易记录会保存在浏览器本地（localStorage），不会上传到服务器。
+        <div class="card-main">
+          <div class="primary-value" id="total-pnl">0.00</div>
+          <div class="secondary">收益率：<span id="total-pnl-pct">0.00%</span></div>
         </div>
       </div>
-    </div>
-  </section>
-</div>
 
-<script>
-  // ========== 配置 ==========
-  const TWELVE_DATA_KEY = "eac5e5832df94c789a5adadb864956e9";
-  const TRADE_STORAGE_KEY = "portfolio_trades_v2";
+      <div class="card">
+        <div class="card-header">
+          <h2>仓位数量（估算）</h2>
+          <div class="badge">仅成功获取价格的标的</div>
+        </div>
+        <div class="card-main">
+          <div class="primary-value" id="holding-count">0</div>
+          <div class="secondary" id="failed-count">0 个标的获取失败</div>
+        </div>
+      </div>
+    </section>
 
-  // ========== 工具函数 ==========
-  const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+    <!-- 主内容 -->
+    <section class="main-grid">
+      <div class="card-table">
+        <div class="table-header">
+          <h3><span class="status-dot"></span> 持仓明细</h3>
+          <small>支持多笔买卖，自动计算成本、盈亏</small>
+        </div>
 
-  function formatMoney(value) {
-    if (!isFinite(value)) return "--";
-    return value.toLocaleString("zh-CN", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-  }
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>标的</th>
+                <th>数量</th>
+                <th>成本价</th>
+                <th>现价</th>
+                <th>市值</th>
+                <th>盈亏</th>
+                <th>盈亏%</th>
+              </tr>
+            </thead>
+            <tbody id="position-table-body"></tbody>
+          </table>
+        </div>
+      </div>
 
-  function formatPct(value) {
-    if (!isFinite(value)) return "0.00%";
-    return value.toFixed(2) + "%";
-  }
+      <div class="right-column">
 
-  // ========== 行情获取：Yahoo (HK) + TwelveData (US) ==========
-  async function fetchPriceFromTwelveData(symbol) {
-    const url = `https://api.twelvedata.com/price?symbol=${encodeURIComponent(symbol)}&apikey=${TWELVE_DATA_KEY}`;
-    const resp = await fetch(url);
-    const data = await resp.json();
-    if (data && data.price) {
-      return Number(data.price);
-    }
-    throw new Error(`TwelveData 价格获取失败: ${symbol}`);
-  }
+        <!-- 饼图 -->
+        <div class="card-chart">
+          <div class="chart-header">
+            <h3>仓位分布 <span style="font-size:11px;color:#22c55e;">· 深色 · TradingView 风格</span></h3>
+            <div class="chart-sub" id="chart-subtext">加载中...</div>
+          </div>
 
-  async function fetchPriceFromYahooHK(symbol) {
-    // symbol 形如 "0700" → 拼成 0700.HK
-    const yahooUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbol)}.HK`;
-    // 用 allorigins 代理避免 CORS
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`;
-    const resp = await fetch(proxyUrl);
-    const data = await resp.json();
-    const quote = data?.quoteResponse?.result?.[0];
-    if (!quote || quote.regularMarketPrice == null) {
-      throw new Error(`Yahoo HK 价格获取失败: ${symbol}`);
-    }
-    return Number(quote.regularMarketPrice);
-  }
+          <div class="chart-container">
+            <canvas id="allocation-chart"></canvas>
+          </div>
+        </div>
 
-  async function getPrice(symbol, market) {
-    if (market === "HK") {
-      return fetchPriceFromYahooHK(symbol);
-    }
-    // 默认视作 US 市场（TwelveData 支持的）
-    return fetchPriceFromTwelveData(symbol);
-  }
+        <!-- 交易输入 -->
+        <div class="card-trade">
+          <h3>记录一笔交易</h3>
+          <form id="trade-form" class="trade-form">
+            <label>股票代码
+              <input type="text" id="trade-symbol" placeholder="NVDA / QQQ / 0700">
+            </label>
 
-  // ========== 数据加载 ==========
-  async function loadRawHoldings() {
-    const resp = await fetch("data.json?t=" + Date.now());
-    const json = await resp.json();
-    return json;
-  }
+            <label>价格
+              <input type="number" id="trade-price" step="0.0001" placeholder="USD 或 HKD">
+            </label>
 
-  // 把 data.json 里的 value 转换成 初始估算仓位（qty & cost = 当前价格）
-  async function enrichHoldingsWithPrice(rawList) {
-    const enriched = [];
-    let failed = 0;
+            <label>数量
+              <input type="number" id="trade-qty" step="0.01" placeholder="买入正数，卖出负数">
+            </label>
+          </form>
 
-    for (const item of rawList) {
-      try {
-        const price = await getPrice(item.symbol, item.market);
-        const qty = item.value ? Number((item.value / price).toFixed(2)) : 0;
-        enriched.push({
-          ...item,
-          price,
-          qty,
-          cost: price  // 初始估算：成本 = 当前价格，后续由交易记录修正
-        });
-        // 小睡一下，避免触发速率限制
-        await sleep(150);
-      } catch (e) {
-        console.warn("价格获取失败:", item.symbol, e);
-        failed++;
-      }
-    }
-    return { holdings: enriched, failed };
-  }
+          <div class="trade-actions">
+            <button class="btn-primary" id="btn-submit-trade">提交交易</button>
+            <button class="btn-secondary" id="btn-reset-data">重置为 data.json 初始估算</button>
+          </div>
 
-  // ========== 本地交易记录 ==========
-  function loadTrades() {
-    try {
-      const raw = localStorage.getItem(TRADE_STORAGE_KEY);
-      if (!raw) return [];
-      return JSON.parse(raw);
-    } catch {
-      return [];
-    }
-  }
+          <div class="hint">交易记录保存在浏览器 localStorage，不会上传服务器。</div>
+        </div>
 
-  function saveTrades(trades) {
-    localStorage.setItem(TRADE_STORAGE_KEY, JSON.stringify(trades));
-  }
+      </div>
+    </section>
 
-  // 应用交易记录到基础持仓，计算加权成本与仓位
-  function applyTrades(baseHoldings, trades) {
-    const map = new Map();
-    for (const h of baseHoldings) {
-      map.set(h.symbol, {
-        ...h,
-        qty: h.qty || 0,
-        cost: h.cost || h.price || 0
-      });
-    }
+  </div>
 
-    for (const t of trades) {
-      const symbol = t.symbol.toUpperCase();
-      const h = map.get(symbol);
-      if (!h) continue;
-      const tradeQty = Number(t.qty);
-      const tradePrice = Number(t.price);
-      if (!isFinite(tradeQty) || !isFinite(tradePrice)) continue;
+  <!-- 引入主脚本 -->
+  <script src="main.js"></script>
 
-      if (tradeQty > 0) {
-        // 买入：加权平均成本
-        const totalCostBefore = h.cost * h.qty;
-        const totalCostAfter = totalCostBefore + tradeQty
+</body>
+</html>
