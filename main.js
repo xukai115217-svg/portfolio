@@ -1,289 +1,272 @@
-// ==========================
-// 持仓面板 v2.0 - 防限速版 main.js
-// ==========================
+// =========================
+//   CONFIG
+// =========================
+const TWELVE_KEY = "eac5e5832df94c789a5adadb864956e9";
+const TRADE_KEY = "portfolio_trades_v2";
 
-// ------- 配置 -------
-const TWELVE_DATA_KEY = "eac5e5832df94c789a5adadb864956e9";
-const TRADE_STORAGE_KEY = "portfolio_trades_v2";
-const MAX_TWELVE_PER_MIN = 8;  // 免费版限制：8 请求/分钟
+// 每批最大并发行情数量（避免 429 错误）
+const BATCH_SIZE = 6;
 
-// 工具函数
-const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+// =========================
+//   Helper Functions
+// =========================
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 function formatMoney(v) {
-  return isFinite(v)
-    ? v.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    : "--";
+  if (!isFinite(v)) return "--";
+  return v.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatPct(v) {
-  return isFinite(v) ? (v * 100).toFixed(2) + "%" : "--";
+  if (!isFinite(v)) return "0.00%";
+  return (v * 100).toFixed(2) + "%";
 }
 
+// =========================
+//  Fetch Prices
+// =========================
 
-// ==========================
-// 价格获取（HK → Yahoo | US → TwelveData）
-// ==========================
-
-async function fetchPriceHK(symbol) {
-  const yahooUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}.HK`;
-  const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`;
-  try {
-    const res = await fetch(url);
-    const json = await res.json();
-    const price = json?.quoteResponse?.result?.[0]?.regularMarketPrice;
-    if (!price) throw new Error("HK price empty");
-    return Number(price);
-  } catch (e) {
-    console.warn(`HK 价格获取失败: ${symbol}`, e);
-    return null;
-  }
+async function fetchUSPrice(symbol) {
+  const url = `https://api.twelvedata.com/price?symbol=${symbol}&apikey=${TWELVE_KEY}`;
+  const r = await fetch(url);
+  const j = await r.json();
+  if (j && j.price) return Number(j.price);
+  throw new Error("TwelveData 价格失败");
 }
 
-async function fetchPriceUS(symbol) {
-  const url = `https://api.twelvedata.com/price?symbol=${symbol}&apikey=${TWELVE_DATA_KEY}`;
-  try {
-    const res = await fetch(url);
-    const json = await res.json();
-    if (json?.price) return Number(json.price);
-    throw new Error(json?.message || "US price error");
-  } catch (e) {
-    console.warn(`US 价格获取失败: ${symbol}`, e);
-    return null;
-  }
+async function fetchHKPrice(symbol) {
+  const yahoo = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}.HK`;
+  const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(yahoo)}`;
+  const r = await fetch(proxy);
+  const j = await r.json();
+  const q = j?.quoteResponse?.result?.[0];
+  if (q?.regularMarketPrice != null) return Number(q.regularMarketPrice);
+  throw new Error("Yahoo HK 失败");
 }
 
-
-// ==========================
-// 自动分批请求 US 股票价格（不会触发限速）
-// ==========================
-
-async function fetchUSPricesInBatches(symbols) {
-  const results = {};
-  const batches = [];
-
-  // 按 8 个 symbol / 批分组
-  for (let i = 0; i < symbols.length; i += MAX_TWELVE_PER_MIN) {
-    batches.push(symbols.slice(i, i + MAX_TWELVE_PER_MIN));
-  }
-
-  for (let i = 0; i < batches.length; i++) {
-    const batch = batches[i];
-
-    console.log(`⚡ 正在获取第 ${i + 1}/${batches.length} 批 US 价格:`, batch);
-
-    // 批内并行请求
-    const prices = await Promise.all(batch.map(fetchPriceUS));
-
-    batch.forEach((symbol, idx) => {
-      results[symbol] = prices[idx];
-    });
-
-    // 如果不是最后一批 → 等待 65 秒
-    if (i < batches.length - 1) {
-      console.log("⏳ 等待 65 秒以避免 TwelveData 限速...");
-      await sleep(65000);
-    }
-  }
-
-  return results;
+async function getPrice(item) {
+  if (item.market === "HK") return fetchHKPrice(item.symbol);
+  return fetchUSPrice(item.symbol);
 }
 
+// =========================
+//  Load Base Holdings from data.json
+// =========================
 
-// ==========================
-// 加载 data.json
-// ==========================
+async function loadBaseHoldings() {
+  const r = await fetch("data.json?t=" + Date.now());
+  const list = await r.json();
 
-async function loadRawHoldings() {
-  const res = await fetch("data.json?t=" + Date.now());
-  return res.json();
+  return list.map(i => ({
+    symbol: i.symbol.toUpperCase(),
+    name: i.name || i.symbol,
+    market: i.market || "US",
+    category: i.category || "other",
+    qty: Number(i.qty || 0),       // 使用你提供的真实数量
+    cost: Number(i.cost || 0)      // 使用你提供的真实成本价
+  }));
 }
 
+// =========================
+//   Batched Price Loading
+// =========================
 
-// ==========================
-// 主逻辑：获取价格 + 构建基础持仓
-// ==========================
-
-async function loadHoldingsWithPrice(raw) {
-  const hkSymbols = raw.filter(x => x.market === "HK").map(x => x.symbol);
-  const usSymbols = raw.filter(x => x.market === "US").map(x => x.symbol);
-
+async function loadPricesInBatches(holdings) {
+  const result = [];
   let failed = 0;
 
-  // -------- HK 股票（不占额度）--------
-  const hkPrices = {};
-  for (const s of hkSymbols) {
-    const p = await fetchPriceHK(s);
-    if (p) hkPrices[s] = p;
-    else failed++;
+  const progress = document.getElementById("last-update");
+
+  for (let i = 0; i < holdings.length; i += BATCH_SIZE) {
+    const batch = holdings.slice(i, i + BATCH_SIZE);
+
+    progress.innerText = `加载价格中… ${i}/${holdings.length}`;
+
+    const promises = batch.map(async h => {
+      try {
+        const p = await getPrice(h);
+        return { ...h, price: p };
+      } catch (e) {
+        console.log("价格失败", h.symbol);
+        failed++;
+        return { ...h, price: null };
+      }
+    });
+
+    const partial = await Promise.all(promises);
+    result.push(...partial);
+
+    await sleep(1500); // 每批等待 1.5 秒，避免 API 限制
   }
 
-  // -------- US 股票（自动分批）--------
-  const usPrices = await fetchUSPricesInBatches(usSymbols);
+  progress.innerText = "已刷新";
 
-  // 组装持仓
-  const holdings = raw.map(item => {
-    const price = item.market === "HK" ? hkPrices[item.symbol] : usPrices[item.symbol];
-    if (!price) {
-      failed++;
-      return null;
-    }
-
-    const qty = Number((item.value / price).toFixed(2));
-
-    return {
-      ...item,
-      price,
-      qty,
-      cost: price
-    };
-  }).filter(Boolean);
-
-  return { holdings, failed };
+  return { enriched: result, failed };
 }
 
-
-// ==========================
-// 本地交易记录
-// ==========================
+// =========================
+//  Trades: Save / Load
+// =========================
 
 function loadTrades() {
   try {
-    return JSON.parse(localStorage.getItem(TRADE_STORAGE_KEY)) || [];
+    return JSON.parse(localStorage.getItem(TRADE_KEY) || "[]");
   } catch {
     return [];
   }
 }
 
 function saveTrades(list) {
-  localStorage.setItem(TRADE_STORAGE_KEY, JSON.stringify(list));
+  localStorage.setItem(TRADE_KEY, JSON.stringify(list));
 }
 
-// 应用交易记录：买卖成本加权计算
-function applyTrades(base, trades) {
+// =========================
+//  Apply Trades to Holdings
+// =========================
+
+function applyTrades(holdings, trades) {
   const map = new Map();
+  holdings.forEach(h => map.set(h.symbol, { ...h }));
 
-  base.forEach(h => {
-    map.set(h.symbol.toUpperCase(), { ...h });
-  });
-
-  trades.forEach(t => {
-    const key = t.symbol.toUpperCase();
-    const h = map.get(key);
-    if (!h) return;
+  for (const t of trades) {
+    const s = t.symbol.toUpperCase();
+    const h = map.get(s);
+    if (!h) continue;
 
     const qty = Number(t.qty);
     const price = Number(t.price);
-    if (!qty || !price) return;
 
     if (qty > 0) {
-      // 买入 → 加权成本
-      const totalCost = h.cost * h.qty + qty * price;
-      h.qty += qty;
-      h.cost = totalCost / h.qty;
-    } else {
-      // 卖出
-      h.qty += qty; // qty 为负
-      if (h.qty < 0) h.qty = 0;
+      // 买入 → 加权平均成本
+      const totalBefore = h.cost * h.qty;
+      const totalAfter  = totalBefore + qty * price;
+      const newQty      = h.qty + qty;
+      h.cost = newQty > 0 ? totalAfter / newQty : h.cost;
+      h.qty = newQty;
+    } else if (qty < 0) {
+      // 卖出 → 数量减少，不改变成本
+      h.qty = Math.max(h.qty + qty, 0);
     }
 
-    map.set(key, h);
-  });
+    map.set(s, h);
+  }
 
-  return [...map.values()];
+  return Array.from(map.values());
 }
 
+// =========================
+//   Render UI
+// =========================
 
-// ==========================
-// 渲染表格 + 总览
-// ==========================
+function renderTable(list) {
+  const tbody = document.getElementById("position-table-body");
+  tbody.innerHTML = "";
 
-function render(holdings) {
-  const body = document.getElementById("position-table-body");
-  body.innerHTML = "";
+  let totalValue = 0, totalCost = 0;
 
-  let totalValue = 0;
-  let totalCost = 0;
+  list.forEach(i => {
+    if (!i.price || i.qty <= 0) return;
 
-  holdings.forEach(h => {
-    const value = h.qty * h.price;
-    const costValue = h.qty * h.cost;
-    const pnl = value - costValue;
+    const marketValue = i.price * i.qty;
+    const costValue = i.cost * i.qty;
+    const pnl = marketValue - costValue;
     const pnlPct = pnl / costValue;
 
-    totalValue += value;
+    totalValue += marketValue;
     totalCost += costValue;
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${h.symbol}</td>
-      <td>${h.qty}</td>
-      <td>${formatMoney(h.cost)}</td>
-      <td>${formatMoney(h.price)}</td>
-      <td>${formatMoney(value)}</td>
-      <td>${formatMoney(pnl)}</td>
+      <td>${i.symbol}<br><span style="color:#888">${i.name}</span></td>
+      <td>${i.qty}</td>
+      <td>${formatMoney(i.cost)}</td>
+      <td>${formatMoney(i.price)}</td>
+      <td>${formatMoney(marketValue)}</td>
+      <td style="color:${pnl>=0?'#4ade80':'#f87171'}">${formatMoney(pnl)}</td>
       <td>${formatPct(pnlPct)}</td>
     `;
-    body.appendChild(tr);
+    tbody.appendChild(tr);
   });
 
-  // 总览
-  document.getElementById("total-value").textContent = formatMoney(totalValue);
-  document.getElementById("total-cost").textContent = formatMoney(totalCost);
-  document.getElementById("total-pnl").textContent = formatMoney(totalValue - totalCost);
-  document.getElementById("total-pnl-pct").textContent =
-    totalCost > 0 ? formatPct((totalValue - totalCost) / totalCost) : "0.00%";
-
-  document.getElementById("holding-count").textContent = holdings.length;
+  document.getElementById("total-value").innerText = formatMoney(totalValue);
+  document.getElementById("total-cost").innerText = formatMoney(totalCost);
+  document.getElementById("total-pnl").innerText = formatMoney(totalValue - totalCost);
+  document.getElementById("total-pnl-pct").innerText = formatPct((totalValue - totalCost) / totalCost);
 }
 
+// =========================
+//   Pie Chart
+// =========================
 
-// ==========================
-// 入口函数：加载 + 渲染
-// ==========================
+let chart;
 
-async function bootstrap() {
-  document.getElementById("last-update").textContent = "加载中…";
+function renderChart(list) {
+  const ctx = document.getElementById("allocation-chart").getContext("2d");
 
-  const raw = await loadRawHoldings();
+  const labels = list.map(i => i.symbol);
+  const values = list.map(i => i.price ? i.price * i.qty : 0);
+
+  if (chart) chart.destroy();
+
+  chart = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: ["#60a5fa", "#34d399", "#fbbf24", "#f87171", "#a78bfa",
+                          "#4ade80", "#2dd4bf", "#fb7185"],
+        borderWidth: 1
+      }]
+    }
+  });
+
+  document.getElementById("chart-subtext").innerText = `共 ${values.length} 个标的`;
+}
+
+// =========================
+//   MAIN WORKFLOW
+// =========================
+
+async function refresh() {
+  const progress = document.getElementById("last-update");
+  progress.innerText = "加载中…";
+
+  const base = await loadBaseHoldings();
+  const { enriched, failed } = await loadPricesInBatches(base);
+
+  let final = enriched.filter(i => i.price != null);
+
   const trades = loadTrades();
+  final = applyTrades(final, trades);
 
-  const { holdings, failed } = await loadHoldingsWithPrice(raw);
+  renderTable(final);
+  renderChart(final);
 
-  const finalHoldings = applyTrades(holdings, trades);
-
-  render(finalHoldings);
-
-  document.getElementById("failed-count").textContent =
-    `${failed} 个标的价格获取失败`;
-  document.getElementById("last-update").textContent = new Date().toLocaleString();
+  document.getElementById("holding-count").innerText = final.length;
+  document.getElementById("failed-count").innerText = `${failed} 个标的获取失败`;
 }
-
-bootstrap();
-
-
-// ==========================
-// 交易输入事件
-// ==========================
 
 document.getElementById("btn-submit-trade").onclick = () => {
-  const symbol = document.getElementById("trade-symbol").value.trim();
+  const symbol = document.getElementById("trade-symbol").value.trim().toUpperCase();
   const price = Number(document.getElementById("trade-price").value);
   const qty = Number(document.getElementById("trade-qty").value);
 
-  if (!symbol || !price || !qty) {
-    alert("请输入完整交易信息");
-    return;
-  }
+  if (!symbol || !isFinite(price) || !isFinite(qty)) return alert("请完整填写交易信息");
 
-  const trades = loadTrades();
-  trades.push({ symbol, price, qty });
-  saveTrades(trades);
+  const list = loadTrades();
+  list.push({ symbol, price, qty });
+  saveTrades(list);
 
-  alert("交易记录已保存，刷新即可更新持仓");
+  alert("已记录交易，刷新后可见结果");
 };
 
 document.getElementById("btn-reset-data").onclick = () => {
-  localStorage.removeItem(TRADE_STORAGE_KEY);
-  alert("已重置为 data.json 初始估算，刷新即可");
+  localStorage.removeItem(TRADE_KEY);
+  alert("已清除交易记录！");
+  refresh();
 };
+
+// 初始化
+refresh();
+
