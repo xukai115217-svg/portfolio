@@ -1,140 +1,115 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <title>我的持仓面板 v2.0</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+  <!-- 全局深色 TradingView 风格 CSS -->
+  <style>
+    :root {
+      --bg: #05070a;
+      --card-bg: #111827;
+      --card-bg-soft: #0b1120;
+      --accent: #22c55e;
+      --accent-soft: rgba(34, 197, 94, 0.15);
+      --danger: #f97373;
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --border-subtle: rgba(148, 163, 184, 0.25);
+      --table-row-hover: rgba(15, 23, 42, 0.85);
+      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.9);
+      --radius-lg: 16px;
+    }
 
-</head>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #05070a;
+      color: var(--text-main);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+    }
 
-<body>
-  <div class="app-shell">
-    <header>
-      <div class="title-block">
-        <h1>我的持仓面板 v2.0</h1>
-        <small>实时价格由 TwelveData（美股）+ Yahoo Finance（港股）提供</small>
-      </div>
+    .app-shell {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
 
-      <div class="pill-group">
-        <div class="pill green">
-          <div class="pill-dot"></div>
-          <span>核心 35%</span> · <span>科技 55%</span> · <span>卫星 10%</span>
-        </div>
-      </div>
-    </header>
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
-    <!-- 顶部卡片 -->
-    <section class="top-grid">
-      <div class="card">
-        <div class="card-header">
-          <h2>总市值</h2>
-          <div class="badge" id="last-update">更新中...</div>
-        </div>
-        <div class="card-main">
-          <div class="primary-value" id="total-value">0.00</div>
-          <div class="secondary">估算成本：<span id="total-cost">0.00</span></div>
-        </div>
-      </div>
+    h1 {
+      margin: 0;
+      font-size: 26px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
 
-      <div class="card">
-        <div class="card-header">
-          <h2>总盈亏</h2>
-          <div class="badge">实时价格估算</div>
-        </div>
-        <div class="card-main">
-          <div class="primary-value" id="total-pnl">0.00</div>
-          <div class="secondary">收益率：<span id="total-pnl-pct">0.00%</span></div>
-        </div>
-      </div>
+    h1::before {
+      content: "📊";
+    }
 
-      <div class="card">
-        <div class="card-header">
-          <h2>仓位数量（估算）</h2>
-          <div class="badge">仅成功获取价格的标的</div>
-        </div>
-        <div class="card-main">
-          <div class="primary-value" id="holding-count">0</div>
-          <div class="secondary" id="failed-count">0 个标的获取失败</div>
-        </div>
-      </div>
-    </section>
+    small {
+      color: var(--text-muted);
+    }
 
-    <!-- 主内容 -->
-    <section class="main-grid">
-      <div class="card-table">
-        <div class="table-header">
-          <h3><span class="status-dot"></span> 持仓明细</h3>
-          <small>支持多笔买卖，自动计算成本、盈亏</small>
-        </div>
+    .pill-group {
+      display: flex;
+      gap: 8px;
+    }
 
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>标的</th>
-                <th>数量</th>
-                <th>成本价</th>
-                <th>现价</th>
-                <th>市值</th>
-                <th>盈亏</th>
-                <th>盈亏%</th>
-              </tr>
-            </thead>
-            <tbody id="position-table-body"></tbody>
-          </table>
-        </div>
-      </div>
+    .pill {
+      padding: 6px 10px;
+      background: rgba(34, 197, 94, 0.15);
+      color: #bbf7d0;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      font-size: 12px;
+    }
 
-      <div class="right-column">
+    /* 卡片布局 */
+    .top-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
 
-        <!-- 饼图 -->
-        <div class="card-chart">
-          <div class="chart-header">
-            <h3>仓位分布 <span style="font-size:11px;color:#22c55e;">· 深色 · TradingView 风格</span></h3>
-            <div class="chart-sub" id="chart-subtext">加载中...</div>
-          </div>
+    .card {
+      background: linear-gradient(135deg, #0f172a, #0b1120);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-soft);
+    }
 
-          <div class="chart-container">
-            <canvas id="allocation-chart"></canvas>
-          </div>
-        </div>
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+    }
 
-        <!-- 交易输入 -->
-        <div class="card-trade">
-          <h3>记录一笔交易</h3>
-          <form id="trade-form" class="trade-form">
-            <label>股票代码
-              <input type="text" id="trade-symbol" placeholder="NVDA / QQQ / 0700">
-            </label>
+    .primary-value {
+      font-size: 30px;
+      margin-top: 10px;
+    }
 
-            <label>价格
-              <input type="number" id="trade-price" step="0.0001" placeholder="USD 或 HKD">
-            </label>
+    .secondary {
+      margin-top: 4px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
 
-            <label>数量
-              <input type="number" id="trade-qty" step="0.01" placeholder="买入正数，卖出负数">
-            </label>
-          </form>
-
-          <div class="trade-actions">
-            <button class="btn-primary" id="btn-submit-trade">提交交易</button>
-            <button class="btn-secondary" id="btn-reset-data">重置为 data.json 初始估算</button>
-          </div>
-
-          <div class="hint">交易记录保存在浏览器 localStorage，不会上传服务器。</div>
-        </div>
-
-      </div>
-    </section>
-
-  </div>
-
-  <!-- 引入主脚本 -->
-  <script src="main.js"></script>
-
-</body>
-</html>
+    /* 主布局 */
+    .main-grid {
+      display: grid;
