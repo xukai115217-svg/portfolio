@@ -113,3 +113,198 @@
     /* 主布局 */
     .main-grid {
       display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 14px;
+    }
+
+    /* 表格 */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #0b1120;
+      border-radius: var(--radius-lg);
+    }
+
+    thead {
+      background: #111827;
+    }
+
+    thead th {
+      padding: 10px;
+      color: var(--text-muted);
+      border-bottom: 1px solid #1e293b;
+      text-align: right;
+    }
+
+    thead th:first-child {
+      text-align: left;
+    }
+
+    tbody td {
+      padding: 10px;
+      border-top: 1px solid rgba(51, 65, 85, 0.4);
+      text-align: right;
+    }
+
+    tbody td:first-child {
+      text-align: left;
+    }
+
+    tbody tr:hover {
+      background: var(--table-row-hover);
+    }
+
+    /* 饼图区域 */
+    .card-chart {
+      background: linear-gradient(135deg, #0f172a, #0b1120);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .chart-container {
+      padding: 10px;
+      height: 220px;
+    }
+
+    /* 交易输入卡片 */
+    .card-trade {
+      padding: 16px;
+      background: #0b1120;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .trade-form {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    input {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      padding: 8px;
+      border-radius: 8px;
+      color: var(--text-main);
+    }
+
+    button {
+      padding: 8px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .btn-primary {
+      background: #22c55e;
+      color: #0b1120;
+      border: none;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid #64748b;
+    }
+
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+
+    <header>
+      <div>
+        <h1>我的持仓面板 v2.0</h1>
+        <small>实时价格由 TwelveData（美股）+ Yahoo Finance（港股）提供</small>
+      </div>
+
+      <div class="pill-group">
+        <div class="pill">核心 35%</div>
+        <div class="pill">科技 55%</div>
+        <div class="pill">卫星 10%</div>
+      </div>
+    </header>
+
+    <section class="top-grid">
+      <div class="card">
+        <div class="card-header">
+          <span>总市值</span>
+          <span id="last-update">更新中...</span>
+        </div>
+        <div class="primary-value" id="total-value">0.00</div>
+        <div class="secondary">估算成本：<span id="total-cost">0.00</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span>总盈亏</span>
+          <span>实时价格估算</span>
+        </div>
+        <div class="primary-value" id="total-pnl">0.00</div>
+        <div class="secondary">收益率：<span id="total-pnl-pct">0.00%</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span>仓位数量（估算）</span>
+          <span>成功价格标的</span>
+        </div>
+        <div class="primary-value" id="holding-count">0</div>
+        <div class="secondary" id="failed-count">加载中...</div>
+      </div>
+    </section>
+
+    <section class="main-grid">
+      <!-- 表格 -->
+      <div class="card-table">
+        <table>
+          <thead>
+            <tr>
+              <th>标的</th>
+              <th>数量</th>
+              <th>成本价</th>
+              <th>现价</th>
+              <th>市值</th>
+              <th>盈亏</th>
+              <th>盈亏%</th>
+            </tr>
+          </thead>
+          <tbody id="position-table-body"></tbody>
+        </table>
+      </div>
+
+      <!-- 右侧：饼图 + 交易 -->
+      <div class="right-column">
+
+        <div class="card-chart">
+          <h3>仓位分布</h3>
+          <div class="chart-container">
+            <canvas id="allocation-chart"></canvas>
+          </div>
+        </div>
+
+        <div class="card-trade">
+          <h3>记录一笔交易</h3>
+
+          <form class="trade-form">
+            <input type="text" id="trade-symbol" placeholder="NVDA / QQQ / 0700">
+            <input type="number" id="trade-price" step="0.0001" placeholder="买入/卖出价格">
+            <input type="number" id="trade-qty" step="0.01" placeholder="数量（正=买入；负=卖出）">
+          </form>
+
+          <button class="btn-primary" id="btn-submit-trade">提交交易</button>
+          <button class="btn-secondary" id="btn-reset-data">重置 data.json</button>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
