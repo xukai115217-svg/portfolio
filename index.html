@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>我的仓位可视化</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+    }
+    body { margin: 0; padding: 16px; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    h1 { margin: 0 0 6px; font-size: 24px; }
+    .sub { color: #6b7280; font-size: 13px; margin-bottom: 16px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 8px 20px rgba(15,23,42,0.06);
+    }
+    .card h2 { margin: 0 0 8px; font-size: 18px; }
+    .card p { font-size: 13px; color: #6b7280; margin: 0 0 8px; }
+
+    canvas { width: 100% !important; height: 270px !important; }
+
+    .rate {
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    .rate input {
+      width: 70px;
+      margin-left: 6px;
+      padding: 2px 4px;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+  <h1>我的仓位可视化</h1>
+  <div class="sub">自动从 data.json 读取你的实时仓位数据</div>
+
+  <div class="rate">
+    汇率设定：1 USD = 
+    <input id="fxInput" type="number" step="0.01" value="7.8">
+    HKD（修改后图表会自动更新）
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>按单只标的的仓位分布</h2>
+      <canvas id="bySymbol"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>按资产类型的仓位</h2>
+      <canvas id="byCategory"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>港股 vs 美股仓位</h2>
+      <canvas id="byMarket"></canvas>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let FX = 7.8;
+let positions = [];
+
+async function loadData() {
+  const res = await fetch("data.json?ts=" + Date.now());
+  positions = await res.json();
+  renderCharts();
+}
+
+document.getElementById("fxInput").addEventListener("change", (e) => {
+  FX = parseFloat(e.target.value);
+  renderCharts();
+});
+
+function HKtoUSD(v) { return v / FX; }
+
+function renderCharts() {
+  if (!positions.length) return;
+
+  const symbolLabels = positions.map(p => `${p.symbol} ${p.name}`);
+  const symbolValues = positions.map(p => p.market === "HK" ? HKtoUSD(p.value) : p.value);
+  const total = symbolValues.reduce((a,b)=>a+b,0);
+
+  const catMap = { core:"核心指数", tech:"科技巨头", satellite:"卫星资产" };
+  const catValues = { core:0, tech:0, satellite:0 };
+  positions.forEach(p => {
+    const v = p.market==="HK"?HKtoUSD(p.value):p.value;
+    catValues[p.category] += v;
+  });
+
+  let us=0, hk=0;
+  positions.forEach(p=>{
+    const v = p.market==="HK"?HKtoUSD(p.value):p.value;
+    if (p.market==="US") us += v;
+    else hk += v;
+  });
+
+  draw("bySymbol", "doughnut", symbolLabels, symbolValues);
+  draw("byCategory", "doughnut", Object.keys(catValues).map(k=>catMap[k]), Object.values(catValues));
+  draw("byMarket","bar",["美股(USD)","港股(折USD)"],[us,hk]);
+}
+
+let chartObj = {};
+function draw(id, type, labels, data){
+  if (chartObj[id]) chartObj[id].destroy();
+
+  chartObj[id] = new Chart(document.getElementById(id),{
+    type,
+    data:{ labels, datasets:[{ data }] },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{ position:"bottom" }
+      }
+    }
+  });
+}
+
+loadData();
+</script>
+</body>
+</html>
