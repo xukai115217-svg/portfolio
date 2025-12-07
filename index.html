@@ -2,265 +2,657 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>我的持仓面板 v2.0</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>我的持仓面板 v2.0</title>
 
-<!-- TradingView 深色风格 -->
-<style>
+  <!-- TradingView 深色风格 -->
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --card-soft: #1b222c;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --up: #3fb950;
+      --down: #f85149;
+      --primary: #238636;
+    }
+
+    * { box-sizing: border-box; }
+
     body {
-        background: #0d1117;
-        color: #e6edf3;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        margin: 0;
-        padding: 0;
+      background: radial-gradient(circle at top left, #161b22 0, #02040a 45%, #000 100%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 20px 24px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
     }
 
     h1 {
-        padding: 20px;
-        margin: 0;
-        font-size: 28px;
-        font-weight: 600;
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    header small {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .pill {
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(35,134,54,0.15);
+      color: var(--up);
+      font-size: 12px;
+      border: 1px solid rgba(63,185,80,0.4);
+    }
+
+    .grid-main {
+      display: grid;
+      grid-template-columns: 2.1fr 1.3fr;
+      gap: 16px;
+      padding: 0 16px 16px;
+    }
+
+    @media (max-width: 960px){
+      .grid-main { grid-template-columns: 1fr; }
     }
 
     .card {
-        background: #161b22;
-        padding: 20px;
-        border-radius: 14px;
-        margin: 16px;
-        box-shadow: 0 0 20px rgba(0,0,0,0.25);
+      background: rgba(22,27,34,0.96);
+      border-radius: 18px;
+      border: 1px solid rgba(240,246,252,0.04);
+      box-shadow: 0 18px 45px rgba(0,0,0,0.65);
+      padding: 18px 20px;
+      backdrop-filter: blur(16px);
     }
 
-    .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-        gap: 16px;
-        padding: 16px;
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 17px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .position-table {
-        width: 100%;
-        border-collapse: collapse;
-        color: #e6edf3;
-        font-size: 15px;
+    .card h2 span.badge {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--muted);
     }
 
-    .position-table th {
-        text-align: left;
-        padding: 8px;
-        background: #1f242d;
+    .kpi-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
     }
 
-    .position-table td {
-        padding: 8px;
-        border-top: 1px solid #30363d;
+    .kpi {
+      flex: 1;
+      min-width: 140px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: radial-gradient(circle at top left,#202938 0,#141822 55%,#0f131c 100%);
+      border: 1px solid rgba(240,246,252,0.03);
     }
 
-    .green { color: #3fb950; }
-    .red { color: #f85149; }
-
-    .chart-container {
-        width: 100%;
-        height: 360px;
+    .kpi-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
     }
 
-    .input-box {
-        background: #161b22;
-        padding: 12px;
-        border-radius: 10px;
-        margin-bottom: 12px;
+    .kpi-value {
+      font-size: 22px;
+      font-weight: 600;
     }
-</style>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    .kpi-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .flex {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .flex-1 { flex: 1; min-width: 260px; }
+
+    .table-wrap {
+      max-height: 520px;
+      overflow: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      margin-top: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 8px 10px;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    th:first-child, td:first-child { text-align: left; }
+
+    thead {
+      position: sticky;
+      top: 0;
+      background: #111620;
+      z-index: 1;
+    }
+
+    tbody tr:nth-child(2n) {
+      background: rgba(15,19,28,0.8);
+    }
+
+    tbody tr:hover {
+      background: rgba(40,52,70,0.9);
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(33,38,45,0.9);
+      border: 1px solid rgba(57,63,75,0.9);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .chip {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 11px;
+      border: 1px solid rgba(240,246,252,0.06);
+      color: var(--muted);
+      margin-left: 6px;
+    }
+
+    .up { color: var(--up); }
+    .down { color: var(--down); }
+
+    .chart-box {
+      height: 260px;
+      margin-top: 4px;
+    }
+
+    .inputs-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(130px,1fr));
+      gap: 10px;
+      margin: 8px 0 12px;
+    }
+
+    .input-group {
+      background: var(--card-soft);
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .input-group label {
+      font-size: 11px;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .input-group input {
+      width: 100%;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 8px 18px;
+      font-size: 13px;
+      cursor: pointer;
+      background: linear-gradient(135deg,#26a641,#2ea043);
+      color: #fff;
+      font-weight: 500;
+      box-shadow: 0 8px 18px rgba(46,160,67,0.45);
+    }
+
+    .btn.secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      box-shadow: none;
+      color: var(--muted);
+      margin-left: 8px;
+    }
+
+    .status {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+  </style>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-<h1>📈 我的投资面板 v2.0</h1>
+<header>
+  <div>
+    <h1>📊 我的持仓面板 v2.0</h1>
+    <small>实时价格来自 TwelveData · 首次加载会用 <code>value ÷ 实时价格</code> 估算数量 & 成本</small>
+  </div>
+  <div>
+    <span class="pill">核心 35% · 科技 55% · 卫星 10%</span>
+  </div>
+</header>
 
-<div class="grid">
+<div class="grid-main">
+  <!-- 左：总览 + 明细 -->
+  <section class="card">
+    <h2>
+      持仓总览
+      <span class="badge" id="updateTime">初始化中...</span>
+    </h2>
 
-    <!-- 持仓分布图 -->
-    <div class="card">
-        <h2>持仓分布</h2>
-        <canvas id="pieChart"></canvas>
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="kpi-label">总市值</div>
+        <div class="kpi-value" id="kpiTotalValue">--</div>
+        <div class="kpi-sub">按最新行情估算</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">总盈亏</div>
+        <div class="kpi-value" id="kpiTotalPnL">--</div>
+        <div class="kpi-sub" id="kpiTotalPnLPercent">--</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">仓位数量（估算）</div>
+        <div class="kpi-value" id="kpiTotalQty">--</div>
+        <div class="kpi-sub">仅统计已成功获取价格的标的</div>
+      </div>
     </div>
 
-    <!-- 浮动盈亏 -->
-    <div class="card">
-        <h2>总盈亏</h2>
-        <div id="totalPnL" style="font-size:32px;font-weight:600;">--</div>
-        <div id="totalPnLPercent" style="font-size:20px;margin-top:8px;">--</div>
-    </div>
-
-</div>
-
-<!-- 持仓明细卡片 -->
-<div class="card">
-    <h2>持仓明细（实时刷新）</h2>
-
-    <table class="position-table" id="positionTable">
+    <div class="table-wrap">
+      <table id="positionTable">
         <thead>
-            <tr>
-                <th>股票</th>
-                <th>数量</th>
-                <th>成本价</th>
-                <th>现价</th>
-                <th>市值</th>
-                <th>盈亏金额</th>
-                <th>盈亏%</th>
-            </tr>
+          <tr>
+            <th>标的</th>
+            <th>数量</th>
+            <th>成本价</th>
+            <th>现价</th>
+            <th>市值</th>
+            <th>盈亏</th>
+            <th>盈亏%</th>
+          </tr>
         </thead>
         <tbody></tbody>
-    </table>
-</div>
-
-<!-- 输入交易 -->
-<div class="card">
-    <h2>✏ 添加买卖记录（自动更新成本）</h2>
-
-    <div class="input-box">
-        股票代码：<input id="tradeSymbol" placeholder="如 AAPL" />
-    </div>
-    <div class="input-box">
-        买入/卖出价格：<input id="tradePrice" type="number" step="0.01" />
-    </div>
-    <div class="input-box">
-        数量（买入正数，卖出负数）：<input id="tradeQty" type="number" />
+      </table>
     </div>
 
-    <button onclick="applyTrade()" style="padding:10px 18px;border-radius:12px;border:none;background:#238636;color:white;font-size:16px;">
-        提交交易
-    </button>
+    <div class="status" id="statusText">正在从 data.json 初始化持仓...</div>
+  </section>
+
+  <!-- 右：图表 + 交易输入 -->
+  <section class="card">
+    <h2>
+      仓位分布 & 交易
+      <span class="badge">深色 · TradingView 风格</span>
+    </h2>
+
+    <div class="chart-box">
+      <canvas id="pieChart"></canvas>
+    </div>
+
+    <hr style="border:none;border-top:1px solid var(--border);margin:14px 0;" />
+
+    <div class="inputs-row">
+      <div class="input-group">
+        <label>股票代码（symbol）</label>
+        <input id="tradeSymbol" placeholder="如 NVDA / QQQ / 0700" />
+      </div>
+      <div class="input-group">
+        <label>价格（买入/卖出）</label>
+        <input id="tradePrice" type="number" step="0.01" placeholder="USD 或 HKD" />
+      </div>
+      <div class="input-group">
+        <label>数量（买入正数 · 卖出负数）</label>
+        <input id="tradeQty" type="number" step="0.01" />
+      </div>
+    </div>
+    <button class="btn" onclick="applyTrade()">提交交易</button>
+    <button class="btn secondary" onclick="resetHoldings()">重置为 data.json 估算</button>
+
+    <div class="status" id="tradeStatus"></div>
+  </section>
 </div>
 
 <script>
-/* -------------------------
-   加载 data.json
-------------------------- */
-let holdings = {};
+  const API_KEY = "eac5e5832df94c789a5adadb864956e9";
+  const QTY_DECIMALS = 2;
 
-async function loadHoldings() {
-    const res = await fetch("data.json");
-    holdings = await res.json();
-    refreshData();
-}
+  let rawPositions = [];         // 来自 data.json 的原始数据（含 value）
+  let holdings = {};             // {symbol: {qty, cost}}
+  let lastPrices = {};           // {symbol: price}
+  let pieChart = null;
 
-/* -------------------------
-   Fetch 实时价格（TwelveData）
-------------------------- */
-const API_KEY = "eac5e5832df94c789a5adadb864956e9";
+  // ---------------- 工具函数 ----------------
 
-async function getPrice(symbol) {
-    try {
-        const url = `https://api.twelvedata.com/price?symbol=${symbol}&apikey=${API_KEY}`;
+  const fmtMoney = (v) =>
+    isFinite(v) ? v.toLocaleString("en-US", {minimumFractionDigits:2,maximumFractionDigits:2}) : "--";
+
+  const fmtQty = (v) =>
+    isFinite(v) ? v.toFixed(QTY_DECIMALS) : "--";
+
+  function setStatus(msg) {
+    document.getElementById("statusText").textContent = msg;
+  }
+
+  // TwelveData US ticker：直接 symbol
+  function buildUsTicker(symbol) {
+    return symbol;
+  }
+
+  // TwelveData HK ticker：自动尝试多种格式（A2）
+  function buildHkTickerCandidates(symbol) {
+    // symbol 可能是 "0700"、"3690" 等
+    const s = symbol.replace(/^0+/, ""); // 去掉前导 0，例如 0700 -> 700
+    return [
+      `${symbol}.HK`,
+      `${s}.HK`,
+      `${symbol}.XHKG`,
+      `${s}.XHKG`,
+      symbol,
+      s
+    ];
+  }
+
+  async function fetchPriceWithCandidates(candidates) {
+    for (const t of candidates) {
+      try {
+        const url = `https://api.twelvedata.com/price?symbol=${encodeURIComponent(t)}&apikey=${API_KEY}`;
         const res = await fetch(url);
         const data = await res.json();
-        return parseFloat(data.price);
-    } catch (e) {
-        return null;
+        if (data && data.price && !isNaN(parseFloat(data.price))) {
+          return parseFloat(data.price);
+        }
+      } catch(e) {
+        // 忽略，尝试下一个
+      }
     }
-}
+    return null;
+  }
 
-/* -------------------------
-   主刷新逻辑
-------------------------- */
-async function refreshData() {
-    let labels = [];
-    let values = [];
-    let tbody = "";
+  async function getPrice(symbol, market) {
+    if (lastPrices[symbol]) return lastPrices[symbol];
+
+    let price = null;
+    if (market === "US") {
+      const ticker = buildUsTicker(symbol);
+      price = await fetchPriceWithCandidates([ticker]);
+    } else if (market === "HK") {
+      const cands = buildHkTickerCandidates(symbol);
+      price = await fetchPriceWithCandidates(cands);
+    } else {
+      // 其他市场暂不处理
+      price = null;
+    }
+
+    if (price !== null) lastPrices[symbol] = price;
+    return price;
+  }
+
+  // ---------------- 初始化持仓 ----------------
+
+  async function initFromDataJson() {
+    setStatus("正在从 data.json 读取仓位...");
+    const res = await fetch("data.json");
+    rawPositions = await res.json();   // 数组: {symbol,name,market,category,value}
+    // 尝试从 localStorage 恢复真实持仓
+    const saved = localStorage.getItem("holdings_v2");
+    if (saved) {
+      holdings = JSON.parse(saved);
+      setStatus("已从本地保存的持仓恢复。正在刷新最新价格...");
+    } else {
+      setStatus("未发现本地持仓记录，正在用 value ÷ 实时价格 估算初始数量和成本...");
+      holdings = {};
+      for (const p of rawPositions) {
+        if (!p.symbol || !p.value) continue;
+        const sym = p.symbol.toUpperCase();
+        const price = await getPrice(sym, p.market);
+        if (!price) continue;
+        const qty = +(p.value / price).toFixed(QTY_DECIMALS);
+        holdings[sym] = { qty, cost: price };  // 假设初始无浮盈亏
+      }
+      localStorage.setItem("holdings_v2", JSON.stringify(holdings));
+      setStatus("初始估算完成。之后你的买卖记录都会保存在浏览器本地。");
+    }
+
+    await refreshAll();
+  }
+
+  async function refreshAll() {
+    if (!rawPositions.length) return;
+
+    // 为所有 symbol 更新一次最新价格
+    const syms = Object.keys(holdings);
+    for (const s of syms) {
+      const meta = rawPositions.find(p => p.symbol.toUpperCase() === s);
+      if (!meta) continue;
+      await getPrice(s, meta.market);
+    }
+
+    renderPositions();
+    renderPie();
+    updateKpis();
+    document.getElementById("updateTime").textContent =
+      "更新于 " + new Date().toLocaleTimeString("zh-CN", {hour12:false});
+  }
+
+  // ---------------- 渲染表格 ----------------
+
+  function renderPositions() {
+    const tbody = document.querySelector("#positionTable tbody");
+    tbody.innerHTML = "";
+
+    for (const p of rawPositions) {
+      const sym = p.symbol.toUpperCase();
+      const h = holdings[sym];
+      if (!h) continue;
+      const price = lastPrices[sym];
+      if (!price) continue;
+
+      const qty = h.qty;
+      const cost = h.cost;
+      const value = qty * price;
+      const costValue = qty * cost;
+      const pnl = value - costValue;
+      const pnlPct = costValue ? pnl / costValue * 100 : 0;
+
+      const tr = document.createElement("tr");
+
+      const tdName = document.createElement("td");
+      tdName.innerHTML = `
+        <div>${p.name || sym}</div>
+        <div class="tag">${sym}<span class="chip">${p.market || ""} · ${p.category || ""}</span></div>
+      `;
+
+      const tdQty = document.createElement("td");
+      tdQty.textContent = fmtQty(qty);
+
+      const tdCost = document.createElement("td");
+      tdCost.textContent = fmtMoney(cost);
+
+      const tdPrice = document.createElement("td");
+      tdPrice.textContent = price ? fmtMoney(price) : "--";
+
+      const tdVal = document.createElement("td");
+      tdVal.textContent = fmtMoney(value);
+
+      const tdPnL = document.createElement("td");
+      tdPnL.textContent = fmtMoney(pnl);
+      tdPnL.className = pnl >= 0 ? "up" : "down";
+
+      const tdPct = document.createElement("td");
+      tdPct.textContent = isFinite(pnlPct) ? pnlPct.toFixed(2) + "%" : "--";
+      tdPct.className = pnl >= 0 ? "up" : "down";
+
+      tr.append(tdName, tdQty, tdCost, tdPrice, tdVal, tdPnL, tdPct);
+      tbody.appendChild(tr);
+    }
+  }
+
+  // ---------------- KPI & 饼图 ----------------
+
+  function updateKpis() {
     let totalValue = 0;
     let totalCost = 0;
+    let totalQty = 0;
 
-    for (const sym in holdings) {
-        const h = holdings[sym];
-        const qty = h.qty;
-        const cost = h.cost;
-
-        const price = await getPrice(sym);
-        const value = price * qty;
-        const pnl = value - cost * qty;
-        const pnlPct = pnl / (cost * qty) * 100;
-
-        labels.push(sym);
-        values.push(value);
-
-        totalValue += value;
-        totalCost += cost * qty;
-
-        tbody += `
-            <tr>
-                <td>${sym}</td>
-                <td>${qty}</td>
-                <td>${cost.toFixed(2)}</td>
-                <td>${price.toFixed(2)}</td>
-                <td>${value.toFixed(2)}</td>
-                <td class="${pnl >= 0 ? "green" : "red"}">${pnl.toFixed(2)}</td>
-                <td class="${pnl >= 0 ? "green" : "red"}">${pnlPct.toFixed(2)}%</td>
-            </tr>
-        `;
+    for (const p of rawPositions) {
+      const sym = p.symbol.toUpperCase();
+      const h = holdings[sym];
+      const price = lastPrices[sym];
+      if (!h || !price) continue;
+      const qty = h.qty;
+      const cost = h.cost;
+      const value = qty * price;
+      const costValue = qty * cost;
+      totalValue += value;
+      totalCost += costValue;
+      totalQty += qty;
     }
 
-    document.querySelector("#positionTable tbody").innerHTML = tbody;
+    const pnl = totalValue - totalCost;
+    const pnlPct = totalCost ? pnl / totalCost * 100 : 0;
 
-    const totalPnL = totalValue - totalCost;
-    document.getElementById("totalPnL").textContent = totalPnL.toFixed(2);
-    document.getElementById("totalPnLPercent").textContent =
-        (totalPnL / totalCost * 100).toFixed(2) + "%";
+    document.getElementById("kpiTotalValue").textContent = fmtMoney(totalValue);
+    document.getElementById("kpiTotalPnL").textContent =
+      (pnl >= 0 ? "+" : "") + fmtMoney(pnl);
+    document.getElementById("kpiTotalPnL").className = pnl >= 0 ? "kpi-value up" : "kpi-value down";
+    document.getElementById("kpiTotalPnLPercent").textContent =
+      (pnlPct >= 0 ? "+" : "") + pnlPct.toFixed(2) + "%";
+    document.getElementById("kpiTotalQty").textContent = fmtQty(totalQty);
+  }
 
-    updatePie(labels, values);
-}
+  function renderPie() {
+    const labels = [];
+    const values = [];
 
-/* -------------------------
-   饼图
-------------------------- */
-let pieChart;
+    for (const p of rawPositions) {
+      const sym = p.symbol.toUpperCase();
+      const h = holdings[sym];
+      const price = lastPrices[sym];
+      if (!h || !price) continue;
+      const qty = h.qty;
+      const value = qty * price;
+      labels.push(p.name || sym);
+      values.push(value);
+    }
 
-function updatePie(labels, values) {
+    const ctx = document.getElementById("pieChart").getContext("2d");
     if (pieChart) pieChart.destroy();
 
-    pieChart = new Chart(document.getElementById("pieChart"), {
-        type: "pie",
-        data: {
-            labels,
-            datasets: [{
-                data: values,
-                backgroundColor: [
-                    "#4e79a7","#59a14f","#9c755f","#f28e2b","#edc948",
-                    "#bab0ab","#e15759","#76b7b2","#ff9da7"
-                ]
-            }]
-        }
+    pieChart = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels,
+        datasets: [{
+          data: values,
+          backgroundColor: [
+            "#4e79a7","#59a14f","#9c755f","#f28e2b","#edc948",
+            "#bab0ab","#e15759","#76b7b2","#ff9da7","#b07aa1"
+          ],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: { color: "#e6edf3", boxWidth: 12, font: {size: 11} }
+          }
+        },
+        cutout: "60%"
+      }
     });
-}
+  }
 
-/* -------------------------
-   添加交易记录（自动算成本）
-------------------------- */
-function applyTrade() {
-    const sym = document.getElementById("tradeSymbol").value.toUpperCase();
-    const price = parseFloat(document.getElementById("tradePrice").value);
-    const qty = parseFloat(document.getElementById("tradeQty").value);
+  // ---------------- 交易录入 ----------------
 
-    if (!holdings[sym]) holdings[sym] = { qty: 0, cost: price };
+  function applyTrade() {
+    const symInput = document.getElementById("tradeSymbol").value.trim();
+    const priceInput = parseFloat(document.getElementById("tradePrice").value);
+    const qtyInput = parseFloat(document.getElementById("tradeQty").value);
+    const tradeStatus = document.getElementById("tradeStatus");
 
-    const h = holdings[sym];
-
-    const newQty = h.qty + qty;
-    if (newQty <= 0) {
-        h.qty = 0;
-        return;
+    if (!symInput || !isFinite(priceInput) || !isFinite(qtyInput) || qtyInput === 0) {
+      tradeStatus.textContent = "请填写完整：代码 / 价格 / 数量（数量买入为正 · 卖出为负）。";
+      return;
     }
 
-    h.cost = (h.cost * h.qty + price * qty) / newQty;
-    h.qty = newQty;
+    const sym = symInput.toUpperCase();
+    if (!holdings[sym]) {
+      holdings[sym] = { qty: 0, cost: priceInput };
+    }
 
-    localStorage.setItem("holdings", JSON.stringify(holdings));
-    refreshData();
-}
+    const h = holdings[sym];
+    const prevQty = h.qty;
+    const newQty = prevQty + qtyInput;
 
-window.onload = loadHoldings;
+    if (newQty <= 0) {
+      // 清仓
+      h.qty = 0;
+      h.cost = priceInput;
+    } else {
+      // 加权平均成本
+      const prevCost = h.cost;
+      h.cost = (prevCost * prevQty + priceInput * qtyInput) / newQty;
+      h.qty = newQty;
+    }
+
+    localStorage.setItem("holdings_v2", JSON.stringify(holdings));
+    tradeStatus.textContent = "已记录交易，正在刷新...";
+
+    refreshAll();
+  }
+
+  function resetHoldings() {
+    if (!confirm("确认要丢弃所有本地持仓记录，重新用 data.json + 实时价格估算吗？")) return;
+    localStorage.removeItem("holdings_v2");
+    holdings = {};
+    lastPrices = {};
+    initFromDataJson();
+    document.getElementById("tradeStatus").textContent = "已重置，本地保存的买卖记录已清空。";
+  }
+
+  // ---------------- 启动 ----------------
+  window.addEventListener("load", initFromDataJson);
 </script>
-
 </body>
 </html>
