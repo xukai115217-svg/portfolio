@@ -3,139 +3,1041 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>我的仓位可视化</title>
+  <title>我的仓位 Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
+      --bg: #f5f5f7;
+      --bg-card: #ffffff;
+      --text-main: #111827;
+      --text-sub: #6b7280;
+      --border-soft: #e5e7eb;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --accent-strong: #1d4ed8;
+      --shadow-soft: 0 20px 40px rgba(15, 23, 42, 0.08);
+      --radius-xl: 18px;
+      --radius-lg: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-      background: #f3f4f6;
-      color: #111827;
+      background: radial-gradient(circle at top left, #e0f2fe 0, #f5f5f7 42%, #f9fafb 100%);
+      color: var(--text-main);
     }
-    body { margin: 0; padding: 16px; }
-    .container { max-width: 1100px; margin: 0 auto; }
-    h1 { margin: 0 0 6px; font-size: 24px; }
-    .sub { color: #6b7280; font-size: 13px; margin-bottom: 16px; }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 16px;
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px 16px 40px;
     }
-    .card {
-      background: white;
-      border-radius: 16px;
-      padding: 16px;
-      box-shadow: 0 8px 20px rgba(15,23,42,0.06);
-    }
-    .card h2 { margin: 0 0 8px; font-size: 18px; }
-    .card p { font-size: 13px; color: #6b7280; margin: 0 0 8px; }
 
-    canvas { width: 100% !important; height: 270px !important; }
-
-    .rate {
-      margin-bottom: 16px;
-      font-size: 14px;
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      gap: 12px;
     }
-    .rate input {
-      width: 70px;
-      margin-left: 6px;
+
+    .title-block h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: .02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tag {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(37,99,235,0.08);
+      color: var(--accent-strong);
+    }
+
+    .title-block p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: var(--text-sub);
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: 1px solid var(--border-soft);
+      padding: 6px 12px;
+      font-size: 12px;
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(12px);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all .15s ease;
+    }
+
+    .btn-primary {
+      border-color: transparent;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      box-shadow: 0 12px 30px rgba(37,99,235,0.35);
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 22px rgba(15,23,42,0.22);
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.03);
+    }
+
+    .fx-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.9);
+      border-radius: 999px;
+      padding: 4px 10px;
+      border: 1px solid var(--border-soft);
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    .fx-box input {
+      width: 54px;
+      border: none;
+      background: transparent;
+      font-size: 12px;
       padding: 2px 4px;
-      border-radius: 6px;
-      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      text-align: right;
+      outline: none;
+    }
+
+    .fx-box input:focus {
+      background: rgba(209, 213, 219, 0.32);
+    }
+
+    /* layout */
+
+    .grid-top {
+      display: grid;
+      grid-template-columns: minmax(0, 2.1fr) minmax(0, 1fr);
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.96);
+      border-radius: var(--radius-xl);
+      padding: 14px 16px 16px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(255,255,255,0.7);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+
+    .card-header h2 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .card-header span {
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 10px;
+    }
+
+    .summary-item {
+      border-radius: var(--radius-lg);
+      padding: 10px 10px 11px;
+      background: linear-gradient(135deg, #f9fafb, #eef2ff);
+      border: 1px solid rgba(209,213,219,0.6);
+    }
+
+    .summary-label {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-bottom: 2px;
+    }
+
+    .summary-value {
+      font-size: 17px;
+      font-weight: 600;
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .summary-subvalue {
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+
+    .pill {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(209,213,219,0.5);
+      color: var(--text-sub);
+    }
+
+    .pill-strong {
+      background: rgba(22,163,74,0.1);
+      color: #16a34a;
+    }
+
+    /* charts */
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .chart-wrapper {
+      background: #f9fafb;
+      border-radius: var(--radius-lg);
+      padding: 10px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .chart-title {
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chart-title span strong {
+      color: var(--text-main);
+    }
+
+    canvas {
+      width: 100% !important;
+      height: 220px !important;
+    }
+
+    /* detail card */
+
+    .detail-main {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .detail-symbol {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .detail-name {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .detail-name span:first-child {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .detail-name span:last-child {
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    .badge-market {
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .badge-category {
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #ecfdf3;
+      color: #16a34a;
+    }
+
+    .detail-metrics {
+      display: grid;
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      gap: 8px;
+    }
+
+    .detail-metric {
+      padding: 8px 9px;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+    }
+
+    .detail-metric label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-bottom: 2px;
+    }
+
+    .detail-metric div {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .risk-pill {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .risk-low {
+      background: rgba(22,163,74,0.08);
+      color: #15803d;
+    }
+    .risk-mid {
+      background: rgba(234,179,8,0.12);
+      color: #92400e;
+    }
+    .risk-high {
+      background: rgba(220,38,38,0.08);
+      color: #b91c1c;
+    }
+
+    /* table area */
+
+    .grid-bottom {
+      display: grid;
+      grid-template-columns: minmax(0,2.2fr) minmax(0,1.1fr);
+      gap: 16px;
+      margin-top: 6px;
+    }
+
+    .table-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      flex: 1;
+      min-width: 150px;
+    }
+
+    .search-box input {
+      border: none;
+      background: transparent;
+      font-size: 12px;
+      outline: none;
+      width: 100%;
+    }
+
+    .sort-buttons {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .btn-chip {
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      padding: 4px 9px;
+      font-size: 11px;
+      cursor: pointer;
+      color: #4b5563;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-chip.active {
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      border-color: #bfdbfe;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    thead {
+      background: #f3f4f6;
+    }
+
+    th, td {
+      padding: 6px 8px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      font-weight: 500;
+      color: #6b7280;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #f3f4f6;
+      cursor: pointer;
+      transition: background .12s ease;
+    }
+
+    tbody tr:hover {
+      background: #f9fafb;
+    }
+
+    tr.selected {
+      background: #eff6ff !important;
+    }
+
+    .col-name {
+      font-weight: 500;
+      color: var(--text-main);
+    }
+
+    .col-symbol {
+      color: #6b7280;
+      font-size: 11px;
+    }
+
+    .col-market {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .col-category {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #f3f4ff;
+      color: #4f46e5;
+      display: inline-block;
+    }
+
+    .col-value {
+      font-feature-settings: "tnum" 1, "lnum" 1;
+    }
+
+    .col-weight {
+      font-size: 11px;
+      color: #4b5563;
+    }
+
+    .weight-bar-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .weight-bar {
+      flex: 1;
+      height: 4px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      overflow: hidden;
+    }
+
+    .weight-bar-inner {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg,#2563eb,#4f46e5);
+      transform-origin: left;
+      transform: scaleX(0.4);
+    }
+
+    .weight-text {
+      font-size: 11px;
+      color: #4b5563;
+      min-width: 42px;
+      text-align: right;
+    }
+
+    @media (max-width: 900px) {
+      .grid-top,
+      .grid-bottom {
+        grid-template-columns: minmax(0,1fr);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .summary-grid {
+        grid-template-columns: minmax(0,1fr);
+      }
+      canvas {
+        height: 200px !important;
+      }
+      .card {
+        padding: 12px 12px 13px;
+      }
+      .toolbar {
+        justify-content: flex-start;
+      }
     }
   </style>
 </head>
-
 <body>
-<div class="container">
-  <h1>我的仓位可视化</h1>
-  <div class="sub">自动从 data.json 读取你的实时仓位数据</div>
+  <div class="page">
+    <header class="header">
+      <div class="title-block">
+        <h1>
+          我的仓位仪表盘
+          <span class="tag">实时 · 可交互</span>
+        </h1>
+        <p id="subtitle">载入中...</p>
+      </div>
+      <div class="toolbar">
+        <div class="fx-box">
+          <span>1 USD =</span>
+          <input id="fxInput" type="number" step="0.01" value="7.80" />
+          <span>HKD</span>
+        </div>
+        <button class="btn btn-primary" id="refreshBtn">
+          🔄 重新载入
+        </button>
+      </div>
+    </header>
 
-  <div class="rate">
-    汇率设定：1 USD = 
-    <input id="fxInput" type="number" step="0.01" value="7.8">
-    HKD（修改后图表会自动更新）
+    <!-- 顶部：总览 + 图表 -->
+    <section class="grid-top">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>账户总览</h2>
+            <span>基于 data.json 当前数据</span>
+          </div>
+          <span class="pill" id="positionCount">0 个持仓</span>
+        </div>
+        <div class="summary-grid">
+          <div class="summary-item">
+            <div class="summary-label">组合市值（USD）</div>
+            <div class="summary-value">
+              <span id="totalValue">$0</span>
+            </div>
+            <div class="summary-subvalue">港股已按当前汇率折算</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">市场分布</div>
+            <div class="summary-value">
+              <span id="usValue">$0</span>
+              <span class="summary-subvalue">美股</span>
+            </div>
+            <div class="summary-subvalue">
+              港股 <span id="hkValue">$0</span>
+            </div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">仓位集中度</div>
+            <div class="summary-value">
+              <span id="top3Weight">0%</span>
+              <span class="summary-subvalue">前 3 大持仓占比</span>
+            </div>
+            <div class="summary-subvalue" id="riskHint">仓位较分散，风险相对温和</div>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-wrapper">
+            <div class="chart-title">
+              <span><strong>标的维度</strong> · 持仓市值占比</span>
+              <span style="font-size:11px;color:#9ca3af;">点击图块可查看右侧详情</span>
+            </div>
+            <canvas id="bySymbol"></canvas>
+          </div>
+          <div class="chart-wrapper">
+            <div class="chart-title">
+              <span><strong>资产类型</strong> · 结构视图</span>
+              <span id="categoryHint" style="font-size:11px;color:#9ca3af;"></span>
+            </div>
+            <canvas id="byCategory"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧详情卡片 -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>持仓详情</h2>
+            <span id="detailSubtitle">点击左侧图表或下方表格查看单票详情</span>
+          </div>
+        </div>
+        <div class="detail-main" id="detailPanel">
+          <div style="font-size:13px;color:#6b7280;line-height:1.5;">
+            👈 从左侧圆环图中点一下任意标的，或在下方表格中点选一行，这里会展示该标的的：
+            <br />· 市值、仓位占比
+            <br />· 所属市场与类别
+            <br />· 简单风险标签（根据仓位大小）
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 底部：表格 + 说明 -->
+    <section class="grid-bottom">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>持仓列表</h2>
+            <span>可搜索 / 排序 / 点击查看详情</span>
+          </div>
+        </div>
+
+        <div class="table-toolbar">
+          <div class="search-box">
+            🔍
+            <input id="searchInput" placeholder="按代码 / 名称搜索..." />
+          </div>
+          <div class="sort-buttons">
+            <button class="btn-chip active" data-sort="value">
+              市值
+            </button>
+            <button class="btn-chip" data-sort="weight">
+              仓位占比
+            </button>
+            <button class="btn-chip" data-sort="symbol">
+              代码
+            </button>
+          </div>
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>名称 / 代码</th>
+                <th>市场</th>
+                <th>类别</th>
+                <th>市值 (USD)</th>
+                <th>仓位</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <!-- rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>使用说明</h2>
+            <span>本页完全基于 data.json，后续你只改一份数据即可</span>
+          </div>
+        </div>
+        <ul style="padding-left:16px;margin:0;font-size:13px;color:#4b5563;line-height:1.6;">
+          <li>上方汇率框：调整 HKD→USD 折算，所有图表和列表会同步刷新。</li>
+          <li>圆环图：鼠标点击某个扇区，会在右侧详情卡展示该标的。</li>
+          <li>表格：支持搜索、按市值/仓位/代码排序，点击一行也会联动详情卡。</li>
+          <li>如果你以后想加入成本、盈亏等字段，只需在 data.json 里为每个标的多加字段，前端可以再升级展示更多信息。</li>
+        </ul>
+      </div>
+    </section>
   </div>
 
-  <div class="grid">
-    <div class="card">
-      <h2>按单只标的的仓位分布</h2>
-      <canvas id="bySymbol"></canvas>
-    </div>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+    let FX = 7.8;
+    let rawPositions = [];
+    let derived = [];
+    let totalUsd = 0;
+    let symbolChart, categoryChart;
+    let currentSort = { key: 'value', asc: false };
+    let currentFilter = '';
 
-    <div class="card">
-      <h2>按资产类型的仓位</h2>
-      <canvas id="byCategory"></canvas>
-    </div>
+    const catMap = {
+      core: '核心指数',
+      tech: '科技巨头',
+      satellite: '卫星资产'
+    };
 
-    <div class="card">
-      <h2>港股 vs 美股仓位</h2>
-      <canvas id="byMarket"></canvas>
-    </div>
-  </div>
-</div>
+    const catOrder = ['core','tech','satellite'];
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-let FX = 7.8;
-let positions = [];
+    document.getElementById('fxInput').addEventListener('change', e => {
+      const v = parseFloat(e.target.value);
+      if (!isNaN(v) && v > 0) {
+        FX = v;
+        recomputeAndRender();
+      }
+    });
 
-async function loadData() {
-  const res = await fetch("data.json?ts=" + Date.now());
-  positions = await res.json();
-  renderCharts();
-}
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      loadData(true);
+    });
 
-document.getElementById("fxInput").addEventListener("change", (e) => {
-  FX = parseFloat(e.target.value);
-  renderCharts();
-});
+    document.getElementById('searchInput').addEventListener('input', e => {
+      currentFilter = e.target.value.trim().toLowerCase();
+      renderTable();
+    });
 
-function HKtoUSD(v) { return v / FX; }
+    document.querySelectorAll('.btn-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-chip').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const key = btn.getAttribute('data-sort');
+        if (currentSort.key === key) {
+          currentSort.asc = !currentSort.asc;
+        } else {
+          currentSort.key = key;
+          currentSort.asc = key === 'symbol'; // 默认代码升序，数值降序
+        }
+        renderTable();
+      });
+    });
 
-function renderCharts() {
-  if (!positions.length) return;
-
-  const symbolLabels = positions.map(p => `${p.symbol} ${p.name}`);
-  const symbolValues = positions.map(p => p.market === "HK" ? HKtoUSD(p.value) : p.value);
-  const total = symbolValues.reduce((a,b)=>a+b,0);
-
-  const catMap = { core:"核心指数", tech:"科技巨头", satellite:"卫星资产" };
-  const catValues = { core:0, tech:0, satellite:0 };
-  positions.forEach(p => {
-    const v = p.market==="HK"?HKtoUSD(p.value):p.value;
-    catValues[p.category] += v;
-  });
-
-  let us=0, hk=0;
-  positions.forEach(p=>{
-    const v = p.market==="HK"?HKtoUSD(p.value):p.value;
-    if (p.market==="US") us += v;
-    else hk += v;
-  });
-
-  draw("bySymbol", "doughnut", symbolLabels, symbolValues);
-  draw("byCategory", "doughnut", Object.keys(catValues).map(k=>catMap[k]), Object.values(catValues));
-  draw("byMarket","bar",["美股(USD)","港股(折USD)"],[us,hk]);
-}
-
-let chartObj = {};
-function draw(id, type, labels, data){
-  if (chartObj[id]) chartObj[id].destroy();
-
-  chartObj[id] = new Chart(document.getElementById(id),{
-    type,
-    data:{ labels, datasets:[{ data }] },
-    options:{
-      responsive:true,
-      plugins:{
-        legend:{ position:"bottom" }
+    async function loadData(bustCache = false) {
+      try {
+        const url = 'data.json' + (bustCache ? ('?ts=' + Date.now()) : '');
+        const res = await fetch(url);
+        rawPositions = await res.json();
+        document.getElementById('positionCount').textContent = rawPositions.length + ' 个持仓';
+        recomputeAndRender();
+      } catch (err) {
+        console.error(err);
+        document.getElementById('subtitle').textContent = '加载数据失败，请检查 data.json 是否存在';
       }
     }
-  });
-}
 
-loadData();
-</script>
+    function toUsd(p) {
+      return p.market === 'HK' ? p.value / FX : p.value;
+    }
+
+    function recomputeAndRender() {
+      if (!rawPositions || !rawPositions.length) return;
+      derived = rawPositions.map((p, idx) => ({
+        ...p,
+        index: idx,
+        usd: toUsd(p)
+      }));
+      totalUsd = derived.reduce((s,p)=>s+p.usd,0);
+
+      // 排序用于 top3 之类
+      const sortedByValue = [...derived].sort((a,b)=>b.usd-a.usd);
+      const top3Usd = sortedByValue.slice(0,3).reduce((s,p)=>s+p.usd,0);
+      const top3Weight = totalUsd ? top3Usd / totalUsd * 100 : 0;
+      document.getElementById('top3Weight').textContent = top3Weight.toFixed(1) + '%';
+      let riskHint = '仓位较分散，风险相对温和';
+      if (top3Weight > 65) riskHint = '前几大持仓很集中，请注意单票波动风险';
+      else if (top3Weight > 45) riskHint = '有一定集中度，可留意龙头仓位风险';
+      document.getElementById('riskHint').textContent = riskHint;
+
+      const usValue = derived.filter(p=>p.market==='US').reduce((s,p)=>s+p.usd,0);
+      const hkValue = derived.filter(p=>p.market==='HK').reduce((s,p)=>s+p.usd,0);
+
+      document.getElementById('subtitle').textContent =
+        '当前组合市值（折算 USD） · 共 ' + rawPositions.length + ' 个持仓';
+      document.getElementById('totalValue').textContent = '$' + totalUsd.toFixed(2);
+      document.getElementById('usValue').textContent = '$' + usValue.toFixed(2);
+      document.getElementById('hkValue').textContent = '$' + hkValue.toFixed(2);
+
+      renderCharts();
+      renderTable();
+      updateCategoryHint();
+    }
+
+    function renderCharts() {
+      const symbolLabels = derived.map(p => p.symbol + ' ' + p.name);
+      const symbolData = derived.map(p => p.usd);
+
+      const catAgg = { core:0, tech:0, satellite:0 };
+      derived.forEach(p => {
+        if (p.category && catAgg[p.category] != null) {
+          catAgg[p.category] += p.usd;
+        }
+      });
+
+      const categoryLabels = catOrder
+        .filter(c=>catAgg[c]>0)
+        .map(c => catMap[c]);
+      const categoryData = catOrder
+        .filter(c=>catAgg[c]>0)
+        .map(c => catAgg[c]);
+
+      const symbolCtx = document.getElementById('bySymbol').getContext('2d');
+      const catCtx = document.getElementById('byCategory').getContext('2d');
+
+      if (symbolChart) symbolChart.destroy();
+      if (categoryChart) categoryChart.destroy();
+
+      symbolChart = new Chart(symbolCtx, {
+        type: 'doughnut',
+        data: {
+          labels: symbolLabels,
+          datasets: [{
+            data: symbolData,
+            hoverOffset: 6,
+          }]
+        },
+        options: {
+          responsive: true,
+          animation: {
+            animateRotate: true,
+            animateScale: true
+          },
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const v = ctx.raw;
+                  const pct = totalUsd ? (v / totalUsd * 100).toFixed(2) : 0;
+                  return `${ctx.label}: $${v.toFixed(2)} (${pct}%)`;
+                }
+              }
+            }
+          },
+          onClick: (evt, elements) => {
+            if (!elements.length) return;
+            const idx = elements[0].index;
+            const p = derived[idx];
+            if (p) {
+              selectPosition(p.index);
+            }
+          }
+        }
+      });
+
+      categoryChart = new Chart(catCtx, {
+        type: 'doughnut',
+        data: {
+          labels: categoryLabels,
+          datasets: [{
+            data: categoryData
+          }]
+        },
+        options: {
+          responsive: true,
+          animation: {
+            animateRotate: true,
+            animateScale: true
+          },
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const sum = categoryData.reduce((a,b)=>a+b,0);
+                  const v = ctx.raw;
+                  const pct = sum ? (v / sum * 100).toFixed(2) : 0;
+                  return `${ctx.label}: $${v.toFixed(2)} (${pct}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function updateCategoryHint() {
+      const catAgg = { core:0, tech:0, satellite:0 };
+      derived.forEach(p => {
+        if (p.category && catAgg[p.category] != null) {
+          catAgg[p.category] += p.usd;
+        }
+      });
+      const total = Object.values(catAgg).reduce((a,b)=>a+b,0);
+      if (!total) {
+        document.getElementById('categoryHint').textContent = '';
+        return;
+      }
+      const pieces = [];
+      catOrder.forEach(c => {
+        if (catAgg[c] > 0) {
+          const pct = (catAgg[c] / total * 100).toFixed(1);
+          pieces.push(`${catMap[c]} ${pct}%`);
+        }
+      });
+      document.getElementById('categoryHint').textContent = pieces.join(' · ');
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+
+      let list = [...derived];
+
+      if (currentFilter) {
+        list = list.filter(p =>
+          (p.symbol && p.symbol.toLowerCase().includes(currentFilter)) ||
+          (p.name && p.name.toLowerCase().includes(currentFilter))
+        );
+      }
+
+      list.sort((a,b) => {
+        const key = currentSort.key;
+        let va, vb;
+        if (key === 'value') {
+          va = a.usd; vb = b.usd;
+        } else if (key === 'weight') {
+          va = totalUsd ? a.usd/totalUsd : 0;
+          vb = totalUsd ? b.usd/totalUsd : 0;
+        } else if (key === 'symbol') {
+          va = a.symbol || '';
+          vb = b.symbol || '';
+        } else {
+          va = 0; vb = 0;
+        }
+        if (typeof va === 'string') {
+          return currentSort.asc ? va.localeCompare(vb) : vb.localeCompare(va);
+        }
+        return currentSort.asc ? va - vb : vb - va;
+      });
+
+      list.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.dataset.index = p.index;
+
+        const weight = totalUsd ? p.usd / totalUsd * 100 : 0;
+        const weightClass =
+          weight > 12 ? 'risk-high' :
+          weight > 6 ? 'risk-mid' : 'risk-low';
+
+        tr.innerHTML = `
+          <td>
+            <div class="col-name">${p.name}</div>
+            <div class="col-symbol">${p.symbol}</div>
+          </td>
+          <td><span class="col-market">${p.market === 'US' ? '美股' : '港股'}</span></td>
+          <td><span class="col-category">${catMap[p.category] || '其他'}</span></td>
+          <td class="col-value">$${p.usd.toFixed(2)}</td>
+          <td>
+            <div class="weight-bar-wrapper">
+              <div class="weight-bar">
+                <div class="weight-bar-inner" style="transform:scaleX(${Math.min(weight/20,1).toFixed(2)});"></div>
+              </div>
+              <div class="weight-text">${weight.toFixed(1)}%</div>
+            </div>
+          </td>
+        `;
+
+        tr.addEventListener('click', () => {
+          selectPosition(p.index);
+        });
+
+        tbody.appendChild(tr);
+      });
+
+      // 清除原有选中状态
+      document.querySelectorAll('#tableBody tr').forEach(tr => tr.classList.remove('selected'));
+    }
+
+    function selectPosition(idx) {
+      const p = derived.find(x => x.index === idx);
+      if (!p) return;
+
+      // 高亮表格行
+      document.querySelectorAll('#tableBody tr').forEach(tr => {
+        if (parseInt(tr.dataset.index,10) === idx) tr.classList.add('selected');
+        else tr.classList.remove('selected');
+      });
+
+      const weight = totalUsd ? p.usd / totalUsd * 100 : 0;
+      let riskClass = 'risk-low';
+      let riskText = '仓位较小，风险可控';
+      if (weight > 12) {
+        riskClass = 'risk-high';
+        riskText = '单票仓位偏大，需关注波动风险';
+      } else if (weight > 6) {
+        riskClass = 'risk-mid';
+        riskText = '中等仓位，注意控制回撤';
+      }
+
+      const detail = document.getElementById('detailPanel');
+      detail.innerHTML = `
+        <div class="detail-symbol">
+          <div class="detail-name">
+            <span>${p.name}</span>
+            <span>${p.symbol} · ${p.market === 'US' ? '美股' : '港股'}</span>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <span class="badge-market">${p.market === 'US' ? 'US' : 'HK'}</span>
+            <span class="badge-category">${catMap[p.category] || '其他'}</span>
+          </div>
+        </div>
+
+        <div class="detail-metrics">
+          <div class="detail-metric">
+            <label>市值 (USD)</label>
+            <div>$${p.usd.toFixed(2)}</div>
+          </div>
+          <div class="detail-metric">
+            <label>仓位占比</label>
+            <div>${weight.toFixed(2)}%</div>
+          </div>
+          <div class="detail-metric">
+            <label>原始币种市值</label>
+            <div>${p.market === 'US' ? '$' + p.value.toFixed(2) : p.value.toFixed(2) + ' HKD'}</div>
+          </div>
+          <div class="detail-metric">
+            <label>风险标签</label>
+            <div>
+              <span class="risk-pill ${riskClass}">
+                ● ${riskText}
+              </span>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('detailSubtitle').textContent = '已选中：' + p.name + '（' + p.symbol + '）';
+    }
+
+    // 初始化
+    loadData(false);
+  </script>
 </body>
 </html>
